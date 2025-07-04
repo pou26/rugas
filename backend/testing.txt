@@ -1,0 +1,316 @@
+# Order Management System - API Endpoints for Postman
+
+## Base URL
+```
+http://localhost:5000/api
+```
+
+## Authentication Endpoints
+
+### 1. Register User
+- **Method**: POST
+- **URL**: `{{base_url}}/auth/register`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }
+  ```
+
+### 2. Login User
+- **Method**: POST
+- **URL**: `{{base_url}}/auth/login`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "admin123"
+  }
+  ```
+- **Response**: Save the `token` from response for authenticated requests
+
+## Customer Endpoints
+
+### 3. Get All Customers
+- **Method**: GET
+- **URL**: `{{base_url}}/customers`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+### 4. Create Customer
+- **Method**: POST
+- **URL**: `{{base_url}}/customers`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "name": "Alice Johnson",
+    "email": "alice@example.com",
+    "phone": "+1-555-0104",
+    "address": {
+      "street": "321 Elm Street",
+      "city": "San Francisco",
+      "state": "CA",
+      "zipCode": "94102",
+      "country": "USA"
+    }
+  }
+  ```
+
+### 5. Get Customer by ID
+- **Method**: GET
+- **URL**: `{{base_url}}/customers/{{customer_id}}`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+## Product Endpoints
+
+### 6. Get All Products
+- **Method**: GET
+- **URL**: `{{base_url}}/products`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- **Query Parameters** (optional):
+  - `category`: Filter by category
+  - `search`: Search in name/description
+
+### 7. Get Products with Filters
+- **Method**: GET
+- **URL**: `{{base_url}}/products?category=Electronics&search=phone`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+### 8. Create Product
+- **Method**: POST
+- **URL**: `{{base_url}}/products`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "name": "Gaming Mouse",
+    "category": "Electronics",
+    "description": "High-precision gaming mouse with RGB lighting",
+    "price": 79.99,
+    "stock": 25
+  }
+  ```
+
+### 9. Create Product with File Upload
+- **Method**: POST
+- **URL**: `{{base_url}}/products`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- **Body** (form-data):
+  ```
+  name: Gaming Keyboard
+  category: Electronics
+  description: Mechanical gaming keyboard with backlight
+  price: 129.99
+  stock: 20
+  pictures: [Select files to upload]
+  ```
+
+### 10. Get Product Categories
+- **Method**: GET
+- **URL**: `{{base_url}}/products/categories`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+## Order Endpoints
+
+### 11. Get All Orders
+- **Method**: GET
+- **URL**: `{{base_url}}/orders`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+- **Query Parameters** (optional):
+  - `status`: placed, shipped, delivered, cancelled
+  - `customer`: Customer ID
+  - `category`: Product category
+  - `page`: Page number (default: 1)
+  - `limit`: Items per page (default: 10)
+
+### 12. Get Orders with Filters
+- **Method**: GET
+- **URL**: `{{base_url}}/orders?status=placed&page=1&limit=5`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+### 13. Create Order
+- **Method**: POST
+- **URL**: `{{base_url}}/orders`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "customer": "{{customer_id}}",
+    "products": [
+      {
+        "productId": "{{product_id_1}}",
+        "quantity": 2
+      },
+      {
+        "productId": "{{product_id_2}}",
+        "quantity": 1
+      }
+    ],
+    "notes": "Urgent delivery required"
+  }
+  ```
+
+### 14. Update Order Status
+- **Method**: PUT
+- **URL**: `{{base_url}}/orders/{{order_id}}/status`
+- **Headers**:
+  ```
+  Content-Type: application/json
+  Authorization: Bearer {{token}}
+  ```
+- **Body** (raw JSON):
+  ```json
+  {
+    "status": "shipped"
+  }
+  ```
+
+## Dashboard/Analytics Endpoints
+
+### 15. Get Dashboard Statistics
+- **Method**: GET
+- **URL**: `{{base_url}}/dashboard/stats`
+- **Headers**:
+  ```
+  Authorization: Bearer {{token}}
+  ```
+
+## Postman Environment Variables
+
+Create a new environment in Postman with these variables:
+
+```json
+{
+  "base_url": "http://localhost:5000/api",
+  "token": "",
+  "customer_id": "",
+  "product_id_1": "",
+  "product_id_2": "",
+  "order_id": ""
+}
+```
+
+## Testing Flow
+
+### Step 1: Authentication
+1. Use endpoint #2 (Login) with default admin credentials:
+   - Email: `admin@example.com`
+   - Password: `admin123`
+2. Copy the token from response and set it in your environment variable
+
+### Step 2: Create Test Data
+1. Create a customer using endpoint #4
+2. Copy the customer ID from response
+3. Create products using endpoint #8
+4. Copy product IDs from responses
+
+### Step 3: Create Orders
+1. Use endpoint #13 with the customer ID and product IDs
+2. Test different order statuses using endpoint #14
+
+### Step 4: Test Filters and Analytics
+1. Test various filters on orders (endpoint #12)
+2. Check dashboard stats (endpoint #15)
+
+## Sample Success Responses
+
+### Login Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user_id_here",
+    "username": "admin",
+    "email": "admin@example.com"
+  }
+}
+```
+
+### Create Order Response:
+```json
+{
+  "_id": "order_id_here",
+  "orderNumber": "ORD-1641234567890-0001",
+  "customer": {
+    "_id": "customer_id",
+    "name": "Alice Johnson",
+    "email": "alice@example.com"
+  },
+  "products": [
+    {
+      "product": {
+        "_id": "product_id",
+        "name": "Gaming Mouse",
+        "price": 79.99
+      },
+      "quantity": 2,
+      "price": 79.99
+    }
+  ],
+  "totalAmount": 159.98,
+  "status": "placed",
+  "orderDate": "2024-01-04T10:30:00.000Z"
+}
+```
+
+## Error Handling
+
+Common error responses:
+- **401 Unauthorized**: Missing or invalid token
+- **400 Bad Request**: Invalid request data
+- **404 Not Found**: Resource not found
+- **500 Internal Server Error**: Server error
+
+## Notes for Testing
+
+1. **Authentication**: All endpoints except login/register require Bearer token
+2. **File Uploads**: Use form-data for product image uploads
+3. **Order Creation**: Ensure customer and products exist before creating orders
+4. **Pagination**: Orders endpoint supports pagination with page/limit parameters
+5. **Filters**: Test various combinations of filters to ensure proper functionality
