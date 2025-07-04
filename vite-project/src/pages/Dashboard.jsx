@@ -18,7 +18,10 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const Dashboard = () => {
-  const { data: stats, isLoading, error } = useQuery('dashboard-stats', dashboardAPI.getStats);
+const { data: stats, isLoading, error } = useQuery({
+  queryKey: ['dashboard-stats'],
+  queryFn: dashboardAPI.getStats,
+});
 
   if (isLoading) {
     return (
