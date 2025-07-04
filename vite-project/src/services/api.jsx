@@ -86,7 +86,14 @@ export const orderAPI = {
 
 // Dashboard API
 export const dashboardAPI = {
-  getStats: () => api.get('/api/dashboard/stats'),
+  getStats: () => {
+    const token = localStorage.getItem('token');
+    return api.get('/api/dashboard/stats', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 };
 
 export default api;
