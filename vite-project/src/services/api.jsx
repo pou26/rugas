@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-console.log('🔧 API Configuration:', {
+console.log('API Configuration:', {
   baseURL: API_BASE_URL,
   environment: import.meta.env.NODE_ENV
 });
@@ -19,18 +19,18 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
     
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔑 Authorization header added');
+      console.log('Authorization header added');
     }
     
     return config;
   },
   (error) => {
-    console.error('❌ Request interceptor error:', error);
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -38,11 +38,11 @@ api.interceptors.request.use(
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => {
-    console.log(`📥 API Response: ${response.status} ${response.config.url}`);
+    console.log(`API Response: ${response.status} ${response.config.url}`);
     return response;
   },
   (error) => {
-    console.error('❌ API Error:', {
+    console.error('API Error:', {
       status: error.response?.status,
       message: error.message,
       url: error.config?.url,
@@ -51,11 +51,11 @@ api.interceptors.response.use(
     
     // Handle different error types
     if (error.code === 'ECONNABORTED') {
-      console.error('⏰ Request timeout - check your network connection');
+      console.error('Request timeout - check your network connection');
     } else if (error.code === 'ERR_NETWORK') {
-      console.error('🌐 Network error - check if the backend server is running');
+      console.error('Network error - check if the backend server is running');
     } else if (error.response?.status === 401) {
-      console.log('🔐 Unauthorized - clearing token and redirecting');
+      console.log('Unauthorized - clearing token and redirecting');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       // Only redirect if not already on login page
@@ -72,24 +72,24 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (email, password) => {
     try {
-      console.log('🔐 Attempting login...');
+      console.log('Attempting login...');
       const response = await api.post('/api/auth/login', { email, password });
-      console.log('✅ Login successful');
+      console.log('Login successful');
       return response;
     } catch (error) {
-      console.error('❌ Login failed:', error);
+      console.error('Login failed:', error);
       throw error;
     }
   },
   
   register: async (username, email, password) => {
     try {
-      console.log('📝 Attempting registration...');
+      console.log('Attempting registration...');
       const response = await api.post('/api/auth/register', { username, email, password });
-      console.log('✅ Registration successful');
+      console.log('Registration successful');
       return response;
     } catch (error) {
-      console.error('❌ Registration failed:', error);
+      console.error('Registration failed:', error);
       throw error;
     }
   },
@@ -99,60 +99,60 @@ export const authAPI = {
 export const customerAPI = {
   getAll: async () => {
     try {
-      console.log('👥 Fetching all customers...');
+      console.log('Fetching all customers...');
       const response = await api.get('/api/customers');
-      console.log('✅ Customers fetched successfully:', response.data?.length || 0, 'customers');
+      console.log('Customers fetched successfully:', response.data?.length || 0, 'customers');
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch customers:', error);
+      console.error('Failed to fetch customers:', error);
       throw error;
     }
   },
   
   getById: async (id) => {
     try {
-      console.log(`👤 Fetching customer ${id}...`);
+      console.log(`Fetching customer ${id}...`);
       const response = await api.get(`/api/customers/${id}`);
-      console.log('✅ Customer fetched successfully');
+      console.log('Customer fetched successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to fetch customer ${id}:`, error);
+      console.error(`Failed to fetch customer ${id}:`, error);
       throw error;
     }
   },
   
   create: async (customer) => {
     try {
-      console.log('➕ Creating new customer...');
+      console.log('Creating new customer...');
       const response = await api.post('/api/customers', customer);
-      console.log('✅ Customer created successfully');
+      console.log('Customer created successfully');
       return response;
     } catch (error) {
-      console.error('❌ Failed to create customer:', error);
+      console.error('Failed to create customer:', error);
       throw error;
     }
   },
   
   update: async (id, customer) => {
     try {
-      console.log(`✏️ Updating customer ${id}...`);
+      console.log(`Updating customer ${id}...`);
       const response = await api.put(`/api/customers/${id}`, customer);
-      console.log('✅ Customer updated successfully');
+      console.log('Customer updated successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to update customer ${id}:`, error);
+      console.error(`Failed to update customer ${id}:`, error);
       throw error;
     }
   },
   
   delete: async (id) => {
     try {
-      console.log(`🗑️ Deleting customer ${id}...`);
+      console.log(`Deleting customer ${id}...`);
       const response = await api.delete(`/api/customers/${id}`);
-      console.log('✅ Customer deleted successfully');
+      console.log('Customer deleted successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to delete customer ${id}:`, error);
+      console.error(`Failed to delete customer ${id}:`, error);
       throw error;
     }
   },
@@ -162,31 +162,31 @@ export const customerAPI = {
 export const productAPI = {
   getAll: async (params = {}) => {
     try {
-      console.log('🛍️ Fetching all products...');
+      console.log('Fetching all products...');
       const response = await api.get('/api/products', { params });
-      console.log('✅ Products fetched successfully:', response.data?.data?.length || 0, 'products');
+      console.log('Products fetched successfully:', response.data?.data?.length || 0, 'products');
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch products:', error);
+      console.error('Failed to fetch products:', error);
       throw error;
     }
   },
   
   getById: async (id) => {
     try {
-      console.log(`🛍️ Fetching product ${id}...`);
+      console.log(`Fetching product ${id}...`);
       const response = await api.get(`/api/products/${id}`);
-      console.log('✅ Product fetched successfully');
+      console.log('Product fetched successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to fetch product ${id}:`, error);
+      console.error(`Failed to fetch product ${id}:`, error);
       throw error;
     }
   },
   
   create: async (product) => {
     try {
-      console.log('➕ Creating new product...');
+      console.log('Creating new product...');
       const formData = new FormData();
       Object.keys(product).forEach(key => {
         if (key === 'pictures' && product[key]) {
@@ -201,46 +201,46 @@ export const productAPI = {
       const response = await api.post('/api/products', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      console.log('✅ Product created successfully');
+      console.log('Product created successfully');
       return response;
     } catch (error) {
-      console.error('❌ Failed to create product:', error);
+      console.error('Failed to create product:', error);
       throw error;
     }
   },
   
   update: async (id, product) => {
     try {
-      console.log(`✏️ Updating product ${id}...`);
+      console.log(`Updating product ${id}...`);
       const response = await api.put(`/api/products/${id}`, product);
-      console.log('✅ Product updated successfully');
+      console.log('Product updated successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to update product ${id}:`, error);
+      console.error(`Failed to update product ${id}:`, error);
       throw error;
     }
   },
   
   delete: async (id) => {
     try {
-      console.log(`🗑️ Deleting product ${id}...`);
+      console.log(`Deleting product ${id}...`);
       const response = await api.delete(`/api/products/${id}`);
-      console.log('✅ Product deleted successfully');
+      console.log('Product deleted successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to delete product ${id}:`, error);
+      console.error(`Failed to delete product ${id}:`, error);
       throw error;
     }
   },
   
   getCategories: async () => {
     try {
-      console.log('🏷️ Fetching categories...');
+      console.log('Fetching categories...');
       const response = await api.get('/api/products/categories');
-      console.log('✅ Categories fetched successfully');
+      console.log('Categories fetched successfully');
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch categories:', error);
+      console.error('Failed to fetch categories:', error);
       throw error;
     }
   },
@@ -250,60 +250,60 @@ export const productAPI = {
 export const orderAPI = {
   getAll: async (params = {}) => {
     try {
-      console.log('📋 Fetching all orders...');
+      console.log('Fetching all orders...');
       const response = await api.get('/api/orders', { params });
-      console.log('✅ Orders fetched successfully:', response.data?.length || 0, 'orders');
+      console.log('Orders fetched successfully:', response.data?.length || 0, 'orders');
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch orders:', error);
+      console.error('Failed to fetch orders:', error);
       throw error;
     }
   },
   
   getById: async (id) => {
     try {
-      console.log(`📋 Fetching order ${id}...`);
+      console.log(`Fetching order ${id}...`);
       const response = await api.get(`/api/orders/${id}`);
-      console.log('✅ Order fetched successfully');
+      console.log('Order fetched successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to fetch order ${id}:`, error);
+      console.error(`Failed to fetch order ${id}:`, error);
       throw error;
     }
   },
   
   create: async (order) => {
     try {
-      console.log('➕ Creating new order...');
+      console.log('Creating new order...');
       const response = await api.post('/api/orders', order);
-      console.log('✅ Order created successfully');
+      console.log('Order created successfully');
       return response;
     } catch (error) {
-      console.error('❌ Failed to create order:', error);
+      console.error('Failed to create order:', error);
       throw error;
     }
   },
   
   updateStatus: async (id, status) => {
     try {
-      console.log(`✏️ Updating order ${id} status to ${status}...`);
+      console.log(`Updating order ${id} status to ${status}...`);
       const response = await api.put(`/api/orders/${id}/status`, { status });
-      console.log('✅ Order status updated successfully');
+      console.log('Order status updated successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to update order ${id} status:`, error);
+      console.error(`Failed to update order ${id} status:`, error);
       throw error;
     }
   },
   
   delete: async (id) => {
     try {
-      console.log(`🗑️ Deleting order ${id}...`);
+      console.log(`Deleting order ${id}...`);
       const response = await api.delete(`/api/orders/${id}`);
-      console.log('✅ Order deleted successfully');
+      console.log('Order deleted successfully');
       return response;
     } catch (error) {
-      console.error(`❌ Failed to delete order ${id}:`, error);
+      console.error(`Failed to delete order ${id}:`, error);
       throw error;
     }
   },
@@ -313,12 +313,12 @@ export const orderAPI = {
 export const dashboardAPI = {
   getStats: async () => {
     try {
-      console.log('📊 Fetching dashboard stats...');
+      console.log('Fetching dashboard stats...');
       const response = await api.get('/api/dashboard/stats');
-      console.log('✅ Dashboard stats fetched successfully');
+      console.log('Dashboard stats fetched successfully');
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch dashboard stats:', error);
+      console.error('Failed to fetch dashboard stats:', error);
       throw error;
     }
   },
@@ -327,12 +327,12 @@ export const dashboardAPI = {
 // Health check function
 export const healthCheck = async () => {
   try {
-    console.log('🏥 Performing health check...');
+    console.log('Performing health check...');
     const response = await api.get('/api/health');
-    console.log('✅ Health check passed');
+    console.log('Health check passed');
     return response;
   } catch (error) {
-    console.error('❌ Health check failed:', error);
+    console.error('Health check failed:', error);
     throw error;
   }
 };

@@ -12,7 +12,7 @@ const app = express();
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true // if you use cookies or auth headers
+  credentials: true
 }));
 app.use(express.json()); // Parse JSON request bodies
 app.use('/uploads', express.static('uploads'));
@@ -351,7 +351,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
     
-    console.log(`✅ Found ${orders.length} orders`);
+    console.log(`Found ${orders.length} orders`);
     
     // Filter by category if specified (after population)
     let filteredOrders = orders;
@@ -367,15 +367,15 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     res.json(filteredOrders);
     
   } catch (error) {
-    console.error('❌ GET /api/orders error:', error);
+    console.error('GET /api/orders error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
-    console.log('➕ POST /api/orders - Creating order...');
-    console.log('📝 Request body:', req.body);
+    console.log('POST /api/orders - Creating order...');
+    console.log('Request body:', req.body);
     
     const { customer, products, notes } = req.body;
     
@@ -414,7 +414,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       });
     }
     
-    console.log('💰 Total amount calculated:', totalAmount);
+    console.log('Total amount calculated:', totalAmount);
     
     const order = new Order({
       customer,
@@ -430,18 +430,18 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     await order.populate('customer', 'name email');
     await order.populate('products.product', 'name price category');
     
-    console.log('✅ Order created successfully:', order._id);
+    console.log('Order created successfully:', order._id);
     res.status(201).json(order);
     
   } catch (error) {
-    console.error('❌ POST /api/orders error:', error);
+    console.error('POST /api/orders error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
   try {
-    console.log(`🔄 PUT /api/orders/${req.params.id}/status - Updating status...`);
+    console.log(`PUT /api/orders/${req.params.id}/status - Updating status...`);
     
     const { status } = req.body;
     
@@ -469,11 +469,11 @@ app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Order not found' });
     }
     
-    console.log(`✅ Order status updated to: ${status}`);
+    console.log(`Order status updated to: ${status}`);
     res.json(order);
     
   } catch (error) {
-    console.error(`❌ PUT /api/orders/${req.params.id}/status error:`, error);
+    console.error(`PUT /api/orders/${req.params.id}/status error:`, error);
     res.status(500).json({ error: error.message });
   }
 });
