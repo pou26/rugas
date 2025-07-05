@@ -29,7 +29,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting to log in with:', { email, password });
       const response = await authAPI.login(email, password);
+      console.log('Login response:', response);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
@@ -41,6 +43,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       const message = error.response?.data?.error || 'Login failed';
       toast.error(message);
+      console.error('Login error:', message);
       return { success: false, error: message };
     }
   };

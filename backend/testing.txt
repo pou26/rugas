@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://localhost:5000/api
+http://localhost:5001/api
 ```
 
 ## Authentication Endpoints
@@ -227,7 +227,7 @@ Create a new environment in Postman with these variables:
 
 ```json
 {
-  "base_url": "http://localhost:5000/api",
+  "base_url": "http://localhost:5001/api",
   "token": "",
   "customer_id": "",
   "product_id_1": "",
