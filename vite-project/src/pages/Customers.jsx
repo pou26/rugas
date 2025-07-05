@@ -11,47 +11,54 @@ const Customers = () => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: customers, isLoading, error } = useQuery('customers', customerAPI.getAll);
-  
+const { data: customers, isLoading, error } = useQuery({
+  queryKey: ['customers'],
+  queryFn: customerAPI.getAll,
+});  
+
+console.log("###",customers)
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const createMutation = useMutation(customerAPI.create, {
-    onSuccess: () => {
-      queryClient.invalidateQueries('customers');
-      toast.success('Customer created successfully');
-      setShowModal(false);
-      reset();
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to create customer');
-    }
-  });
+  const createMutation = useMutation({
+  mutationFn: customerAPI.create,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    toast.success('Customer created successfully');
+    setShowModal(false);
+    reset();
+  },
+  onError: (error) => {
+    toast.error(error.response?.data?.error || 'Failed to create customer');
+  }
+});
 
-  const updateMutation = useMutation(
-    ({ id, ...data }) => customerAPI.update(id, data),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('customers');
-        toast.success('Customer updated successfully');
-        setShowModal(false);
-        setEditingCustomer(null);
-        reset();
-      },
-      onError: (error) => {
-        toast.error(error.response?.data?.error || 'Failed to update customer');
-      }
-    }
-  );
 
-  const deleteMutation = useMutation(customerAPI.delete, {
-    onSuccess: () => {
-      queryClient.invalidateQueries('customers');
-      toast.success('Customer deleted successfully');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to delete customer');
-    }
-  });
+  const updateMutation = useMutation({
+  mutationFn: ({ id, ...data }) => customerAPI.update(id, data),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    toast.success('Customer updated successfully');
+    setShowModal(false);
+    setEditingCustomer(null);
+    reset();
+  },
+  onError: (error) => {
+    toast.error(error.response?.data?.error || 'Failed to update customer');
+  }
+});
+
+
+  const deleteMutation = useMutation({
+  mutationFn: customerAPI.delete,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['customers'] });
+    toast.success('Customer deleted successfully');
+  },
+  onError: (error) => {
+    toast.error(error.response?.data?.error || 'Failed to delete customer');
+  }
+});
+
 
   const filteredCustomers = customers?.data?.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
