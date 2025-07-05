@@ -67,9 +67,12 @@ const Layout = () => {
               );
             })}
           </div>
+          
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+      </div>
+
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
@@ -89,7 +92,6 @@ const Layout = () => {
             </button>
           </div>
         </div>
-      </div>
 
       {/* Main content */}
       <div className="md:ml-64 flex flex-col min-h-screen">

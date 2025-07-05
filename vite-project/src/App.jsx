@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import Customers from './pages/Customers';
 import Products from './pages/Products';
 import Orders from './pages/Orders';
+import OrderCreation from './pages/NewOrder';
 import './index.css';
 
 // Enhanced QueryClient with better error handling
@@ -210,6 +211,7 @@ function App() {
                   <Route path="customers" element={<Customers />} />
                   <Route path="products" element={<Products />} />
                   <Route path="orders" element={<Orders />} />
+                  <Route path="neworders" element={<OrderCreation />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>

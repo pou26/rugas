@@ -178,8 +178,7 @@ const seedData = async () => {
     await Product.insertMany(products);
     console.log('Created sample products...');
 
-    console.log('Seed data completed successfully!');
-    console.log('Admin credentials: admin@example.com / admin123');
+
     
     mongoose.connection.close();
   } catch (error) {

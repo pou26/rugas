@@ -14,55 +14,8 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 
-// Mock API functions - replace with your actual API calls
-const api = {
-  getOrders: async () => {
-    // Replace with your actual API endpoint
-    const response = await fetch('/api/orders');
-    if (!response.ok) throw new Error('Failed to fetch orders');
-    return response.json();
-  },
-  
-  getCustomers: async () => {
-    const response = await fetch('/api/customers');
-    if (!response.ok) throw new Error('Failed to fetch customers');
-    return response.json();
-  },
-  
-  getProducts: async () => {
-    const response = await fetch('/api/products');
-    if (!response.ok) throw new Error('Failed to fetch products');
-    return response.json();
-  },
-  
-  createOrder: async (orderData) => {
-    const response = await fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData),
-    });
-    if (!response.ok) throw new Error('Failed to create order');
-    return response.json();
-  },
-  
-  updateOrderStatus: async ({ orderId, status }) => {
-    const response = await fetch(`/api/orders/${orderId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    if (!response.ok) throw new Error('Failed to update order status');
-    return response.json();
-  },
-  
-  deleteOrder: async (orderId) => {
-    const response = await fetch(`/api/orders/${orderId}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete order');
-    return response.json();
-  }
-};
+// Import your real API instead of mock
+import { orderAPI, customerAPI, productAPI } from '../services/api'; // Adjust path as needed
 
 const OrderStatusBadge = ({ status }) => {
   const statusConfig = {
@@ -85,53 +38,62 @@ const OrderStatusBadge = ({ status }) => {
 
 const CreateOrderModal = ({ isOpen, onClose, customers, products }) => {
   const [formData, setFormData] = useState({
-    customerId: '',
-    productId: '',
-    quantity: 1,
+    customer: '',
+    products: [{ productId: '', quantity: 1 }],
     notes: ''
   });
   
   const queryClient = useQueryClient();
   
-  const createOrderMutation = useMutation(api.createOrder, {
+  const createOrderMutation = useMutation({
+    mutationFn: orderAPI.create,
     onSuccess: () => {
-      queryClient.invalidateQueries('orders');
+      queryClient.invalidateQueries(['orders']);
       toast.success('Order created successfully!');
       onClose();
-      setFormData({ customerId: '', productId: '', quantity: 1, notes: '' });
+      setFormData({ customer: '', products: [{ productId: '', quantity: 1 }], notes: '' });
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to create order');
+      console.error('Create order error:', error);
+      toast.error(error.response?.data?.error || 'Failed to create order');
     }
   });
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.customerId || !formData.productId) {
+    if (!formData.customer || !formData.products[0].productId) {
       toast.error('Please select both customer and product');
       return;
     }
     
-    const selectedProduct = products.find(p => p.id === formData.productId);
-    const selectedCustomer = customers.find(c => c.id === formData.customerId);
-    
-    const orderData = {
+    createOrderMutation.mutate(formData);
+  };
+  
+  const addProduct = () => {
+    setFormData({
       ...formData,
-      totalAmount: selectedProduct.price * formData.quantity,
-      status: 'placed',
-      orderDate: new Date().toISOString(),
-      customer: selectedCustomer,
-      product: selectedProduct
-    };
-    
-    createOrderMutation.mutate(orderData);
+      products: [...formData.products, { productId: '', quantity: 1 }]
+    });
+  };
+  
+  const removeProduct = (index) => {
+    setFormData({
+      ...formData,
+      products: formData.products.filter((_, i) => i !== index)
+    });
+  };
+  
+  const updateProduct = (index, field, value) => {
+    const newProducts = [...formData.products];
+    newProducts[index][field] = value;
+    setFormData({ ...formData, products: newProducts });
   };
   
   if (!isOpen) return null;
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4">Create New Order</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -140,14 +102,14 @@ const CreateOrderModal = ({ isOpen, onClose, customers, products }) => {
               Customer
             </label>
             <select
-              value={formData.customerId}
-              onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+              value={formData.customer}
+              onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
               required
             >
               <option value="">Select Customer</option>
               {customers?.map(customer => (
-                <option key={customer.id} value={customer.id}>
+                <option key={customer._id} value={customer._id}>
                   {customer.name} - {customer.email}
                 </option>
               ))}
@@ -156,35 +118,50 @@ const CreateOrderModal = ({ isOpen, onClose, customers, products }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product
+              Products
             </label>
-            <select
-              value={formData.productId}
-              onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              required
+            {formData.products.map((product, index) => (
+              <div key={index} className="flex space-x-2 mb-2">
+                <select
+                  value={product.productId}
+                  onChange={(e) => updateProduct(index, 'productId', e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  required
+                >
+                  <option value="">Select Product</option>
+                  {products?.map(prod => (
+                    <option key={prod._id} value={prod._id}>
+                      {prod.name} - ${prod.price}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="1"
+                  value={product.quantity}
+                  onChange={(e) => updateProduct(index, 'quantity', parseInt(e.target.value))}
+                  className="w-20 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Qty"
+                  required
+                />
+                {formData.products.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeProduct(index)}
+                    className="px-2 py-1 text-red-600 hover:text-red-800"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addProduct}
+              className="text-sm text-blue-600 hover:text-blue-800"
             >
-              <option value="">Select Product</option>
-              {products?.map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name} - ${product.price}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              required
-            />
+              + Add Product
+            </button>
           </div>
           
           <div>
@@ -209,10 +186,10 @@ const CreateOrderModal = ({ isOpen, onClose, customers, products }) => {
             </button>
             <button
               type="submit"
-              disabled={createOrderMutation.isLoading}
+              disabled={createOrderMutation.isPending}
               className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
-              {createOrderMutation.isLoading ? 'Creating...' : 'Create Order'}
+              {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
             </button>
           </div>
         </form>
@@ -227,28 +204,37 @@ const OrderRow = ({ order, onStatusUpdate, onDelete }) => {
   const handleStatusChange = async (newStatus) => {
     setIsUpdating(true);
     try {
-      await onStatusUpdate(order.id, newStatus);
+      await onStatusUpdate(order._id, newStatus);
     } finally {
       setIsUpdating(false);
     }
   };
   
+  // Handle multiple products display
+  const displayProduct = order.products?.[0] || {};
+  const productCount = order.products?.length || 0;
+  
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-        #{order.id}
+        #{order._id?.slice(-8) || 'N/A'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         {order.customer?.name || 'Unknown Customer'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {order.product?.name || 'Unknown Product'}
+        {displayProduct.product?.name || 'Unknown Product'}
+        {productCount > 1 && (
+          <span className="ml-2 text-xs text-gray-500">
+            (+{productCount - 1} more)
+          </span>
+        )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {order.product?.category || 'N/A'}
+        {displayProduct.product?.category || 'N/A'}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {order.quantity}
+        {displayProduct.quantity || 0}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         ${order.totalAmount?.toFixed(2) || '0.00'}
@@ -257,7 +243,7 @@ const OrderRow = ({ order, onStatusUpdate, onDelete }) => {
         <OrderStatusBadge status={order.status} />
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {new Date(order.orderDate).toLocaleDateString()}
+        {new Date(order.createdAt).toLocaleDateString()}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
         <div className="flex items-center space-x-2">
@@ -292,7 +278,7 @@ const OrderRow = ({ order, onStatusUpdate, onDelete }) => {
             </button>
           )}
           <button
-            onClick={() => onDelete(order.id)}
+            onClick={() => onDelete(order._id)}
             className="text-red-600 hover:text-red-900"
             title="Delete Order"
           >
@@ -316,38 +302,76 @@ const Orders = () => {
   
   const queryClient = useQueryClient();
   
-  // Fetch orders
-  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery(
-    'orders',
-    api.getOrders,
-    { staleTime: 5 * 60 * 1000 }
-  );
+  // Fetch orders with proper error handling
+  const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery({
+    queryKey: ['orders', filters],
+    queryFn: () => orderAPI.getAll(filters),
+    staleTime: 5 * 60 * 1000,
+    select: (data) => {
+      // Handle both array and object responses
+      if (Array.isArray(data.data)) {
+        return data.data;
+      } else if (data.data?.orders) {
+        return data.data.orders;
+      }
+      return [];
+    },
+    onError: (error) => {
+      console.error('Orders fetch error:', error);
+      toast.error('Failed to fetch orders');
+    }
+  });
+  
+  const orders = ordersData || [];
   
   // Fetch customers for dropdown
-  const { data: customers = [] } = useQuery('customers', api.getCustomers);
+  const { data: customersData } = useQuery({
+    queryKey: ['customers'],
+    queryFn: customerAPI.getAll,
+    select: (data) => data.data || []
+  });
+  
+  const customers = customersData || [];
   
   // Fetch products for dropdown
-  const { data: products = [] } = useQuery('products', api.getProducts);
+  const { data: productsData } = useQuery({
+    queryKey: ['products'],
+    queryFn: productAPI.getAll,
+    select: (data) => {
+      if (Array.isArray(data.data)) {
+        return data.data;
+      } else if (data.data?.data) {
+        return data.data.data;
+      }
+      return [];
+    }
+  });
+  
+  const products = productsData || [];
   
   // Update order status mutation
-  const updateStatusMutation = useMutation(api.updateOrderStatus, {
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }) => orderAPI.updateStatus(orderId, status),
     onSuccess: () => {
-      queryClient.invalidateQueries('orders');
+      queryClient.invalidateQueries(['orders']);
       toast.success('Order status updated successfully!');
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to update order status');
+      console.error('Update status error:', error);
+      toast.error(error.response?.data?.error || 'Failed to update order status');
     }
   });
   
   // Delete order mutation
-  const deleteOrderMutation = useMutation(api.deleteOrder, {
+  const deleteOrderMutation = useMutation({
+    mutationFn: orderAPI.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries('orders');
+      queryClient.invalidateQueries(['orders']);
       toast.success('Order deleted successfully!');
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to delete order');
+      console.error('Delete order error:', error);
+      toast.error(error.response?.data?.error || 'Failed to delete order');
     }
   });
   
@@ -355,13 +379,14 @@ const Orders = () => {
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       const matchesSearch = !filters.search || 
-        order.customer?.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        order.product?.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        order.id.toString().includes(filters.search);
+        order.customer?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        order.products?.some(p => p.product?.name?.toLowerCase().includes(filters.search.toLowerCase())) ||
+        order._id?.includes(filters.search);
       
       const matchesStatus = !filters.status || order.status === filters.status;
-      const matchesCustomer = !filters.customer || order.customer?.id === filters.customer;
-      const matchesCategory = !filters.category || order.product?.category === filters.category;
+      const matchesCustomer = !filters.customer || order.customer?._id === filters.customer;
+      const matchesCategory = !filters.category || 
+        order.products?.some(p => p.product?.category === filters.category);
       
       return matchesSearch && matchesStatus && matchesCustomer && matchesCategory;
     });
@@ -369,7 +394,9 @@ const Orders = () => {
   
   // Get unique categories for filter
   const categories = useMemo(() => {
-    const cats = orders.map(order => order.product?.category).filter(Boolean);
+    const cats = orders.flatMap(order => 
+      order.products?.map(p => p.product?.category).filter(Boolean) || []
+    );
     return [...new Set(cats)];
   }, [orders]);
   
@@ -398,7 +425,18 @@ const Orders = () => {
   if (ordersError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600">Error loading orders: {ordersError.message}</div>
+        <div className="text-center">
+          <div className="text-red-600 mb-4">Error loading orders</div>
+          <div className="text-sm text-gray-500">
+            {ordersError.message || 'Please check your network connection and try again'}
+          </div>
+          <button
+            onClick={() => queryClient.invalidateQueries(['orders'])}
+            className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -472,7 +510,7 @@ const Orders = () => {
               >
                 <option value="">All Customers</option>
                 {customers.map(customer => (
-                  <option key={customer.id} value={customer.id}>
+                  <option key={customer._id} value={customer._id}>
                     {customer.name}
                   </option>
                 ))}
@@ -545,7 +583,7 @@ const Orders = () => {
               ) : (
                 filteredOrders.map(order => (
                   <OrderRow
-                    key={order.id}
+                    key={order._id}
                     order={order}
                     onStatusUpdate={handleStatusUpdate}
                     onDelete={handleDelete}

@@ -196,6 +196,42 @@ app.get('/api/customers/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.put('/api/customers/:id', authenticateToken, async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    res.json(customer);
+  } catch (error) {
+    if (error.code === 11000) {
+      res.status(400).json({ error: 'Customer with this email already exists' });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  }
+});
+
+// Add missing DELETE route for deleting customers
+app.delete('/api/customers/:id', authenticateToken, async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    res.json({ message: 'Customer deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Product Routes
 app.get('/api/products', authenticateToken, async (req, res) => {
@@ -244,11 +280,58 @@ app.get('/api/products/categories', authenticateToken, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.get('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-// Order Routes
+// Update product by ID
+app.put('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/products/:id', authenticateToken, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    
+    res.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+//orders
+
 app.get('/api/orders', authenticateToken, async (req, res) => {
   try {
+    console.log('📋 GET /api/orders - Fetching orders...');
     const { status, customer, category, page = 1, limit = 10 } = req.query;
+    
     let query = {};
     
     if (status) {
@@ -258,47 +341,67 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     if (customer) {
       query.customer = customer;
     }
-
+    
+    console.log('🔍 Query filters:', query);
+    
     const orders = await Order.find(query)
-      .populate('customer')
-      .populate('products.product')
+      .populate('customer', 'name email') // Only populate needed fields
+      .populate('products.product', 'name price category') // Populate product details
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
-
-    // Filter by category if specified
+    
+    console.log(`✅ Found ${orders.length} orders`);
+    
+    // Filter by category if specified (after population)
     let filteredOrders = orders;
     if (category) {
-      filteredOrders = orders.filter(order => 
-        order.products.some(p => p.product.category === category)
+      filteredOrders = orders.filter(order =>
+        order.products.some(p => p.product && p.product.category === category)
       );
     }
-
+    
     const total = await Order.countDocuments(query);
     
-    res.json({
-      orders: filteredOrders,
-      totalPages: Math.ceil(total / limit),
-      currentPage: page,
-      total
-    });
+    // Return simple array format for compatibility
+    res.json(filteredOrders);
+    
   } catch (error) {
+    console.error('❌ GET /api/orders error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
+    console.log('➕ POST /api/orders - Creating order...');
+    console.log('📝 Request body:', req.body);
+    
     const { customer, products, notes } = req.body;
+    
+    // Validate required fields
+    if (!customer || !products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ 
+        error: 'Customer and products are required' 
+      });
+    }
     
     // Calculate total amount
     let totalAmount = 0;
     const orderProducts = [];
     
     for (const item of products) {
+      if (!item.productId || !item.quantity) {
+        return res.status(400).json({ 
+          error: 'Each product must have productId and quantity' 
+        });
+      }
+      
       const product = await Product.findById(item.productId);
       if (!product) {
-        return res.status(400).json({ error: `Product not found: ${item.productId}` });
+        return res.status(400).json({ 
+          error: `Product not found: ${item.productId}` 
+        });
       }
       
       const itemTotal = product.price * item.quantity;
@@ -311,38 +414,66 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       });
     }
     
+    console.log('💰 Total amount calculated:', totalAmount);
+    
     const order = new Order({
       customer,
       products: orderProducts,
       totalAmount,
-      notes
+      notes,
+      status: 'placed' // Default status
     });
     
     await order.save();
-    await order.populate('customer');
-    await order.populate('products.product');
     
+    // Populate the saved order before sending response
+    await order.populate('customer', 'name email');
+    await order.populate('products.product', 'name price category');
+    
+    console.log('✅ Order created successfully:', order._id);
     res.status(201).json(order);
+    
   } catch (error) {
+    console.error('❌ POST /api/orders error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.put('/api/orders/:id/status', authenticateToken, async (req, res) => {
   try {
+    console.log(`🔄 PUT /api/orders/${req.params.id}/status - Updating status...`);
+    
     const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+    
+    // Validate status values
+    const validStatuses = ['placed', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+      });
+    }
+    
     const order = await Order.findByIdAndUpdate(
       req.params.id,
       { status },
-      { new: true }
-    ).populate('customer').populate('products.product');
+      { new: true, runValidators: true }
+    )
+    .populate('customer', 'name email')
+    .populate('products.product', 'name price category');
     
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
     
+    console.log(`✅ Order status updated to: ${status}`);
     res.json(order);
+    
   } catch (error) {
+    console.error(`❌ PUT /api/orders/${req.params.id}/status error:`, error);
     res.status(500).json({ error: error.message });
   }
 });

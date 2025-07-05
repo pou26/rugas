@@ -11,10 +11,10 @@ const Customers = () => {
   const [editingCustomer, setEditingCustomer] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: customers, isLoading, error } = useQuery({
+    const { data: customers, isLoading, error } = useQuery({
     queryKey: ['customers'],
     queryFn: customerAPI.getAll,
-  });  
+  });
 
   console.log("###",customers)
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
